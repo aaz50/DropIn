@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  ::selection {
+    background-color: #D6EFE4;
+    color: #0E4A36;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body), -apple-system, sans-serif;
+    background-color: #F8F6F3;
+    color: #141211;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .field-input {
+    @apply w-full px-4 py-2.5 rounded-lg border border-ink-ghost bg-paper text-ink text-[14px] font-body
+      placeholder:text-ink-muted transition-all
+      focus:outline-none focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent-wash;
+    font-family: var(--font-body), sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), Georgia, serif;
+  }
+
+  .font-body {
+    font-family: var(--font-body), -apple-system, sans-serif;
+  }
+
+  .font-mono-dropin {
+    font-family: var(--font-mono), monospace;
+  }
+
+  /* Staggered fade-up for article list items */
+  .stagger-1 { animation-delay: 0ms; }
+  .stagger-2 { animation-delay: 70ms; }
+  .stagger-3 { animation-delay: 140ms; }
+  .stagger-4 { animation-delay: 210ms; }
+  .stagger-5 { animation-delay: 280ms; }
+
+  /* Prose fade-out for paywall preview */
+  .prose-fade {
+    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  }
+}

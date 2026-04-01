@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Publisher {
+  id            String    @id @default(cuid())
+  name          String
+  walletAddress String    @unique
+  description   String?
+  createdAt     DateTime  @default(now())
+  articles      Article[]
+  payments      Payment[]
+}
+
+model Article {
+  id          String    @id @default(cuid())
+  title       String
+  preview     String
+  content     String
+  priceXrp    Float
+  publisherId String
+  publisher   Publisher @relation(fields: [publisherId], references: [id])
+  createdAt   DateTime  @default(now())
+  payments    Payment[]
+}
+
+model Reader {
+  id            String    @id @default(cuid())
+  walletAddress String    @unique
+  createdAt     DateTime  @default(now())
+  payments      Payment[]
+}
+
+model Payment {
+  id          String    @id @default(cuid())
+  txHash      String    @unique
+  amount      Float
+  articleId   String
+  article     Article   @relation(fields: [articleId], references: [id])
+  readerId    String
+  reader      Reader    @relation(fields: [readerId], references: [id])
+  publisherId String
+  publisher   Publisher @relation(fields: [publisherId], references: [id])
+  createdAt   DateTime  @default(now())
+}
