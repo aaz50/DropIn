@@ -105,6 +105,8 @@ export function PaywallGate({
   const handleUnlock = useCallback(async () => {
     if (!isConnected || !address) {
       await connect();
+      // connect() catches internally — if it failed, address is still null
+      // The header button will show the error; nothing more to do here
       return;
     }
 

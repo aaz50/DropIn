@@ -61,6 +61,10 @@ const config: Config = {
         spin: {
           to: { transform: "rotate(360deg)" },
         },
+        "hero-float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
@@ -70,6 +74,7 @@ const config: Config = {
           "paywall-exit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "pulse-ring": "pulse-ring 2s ease-out infinite",
         spin: "spin 0.8s linear infinite",
+        "hero-float": "hero-float 6s ease-in-out infinite",
       },
     },
   },

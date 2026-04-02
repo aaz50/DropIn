@@ -35,17 +35,19 @@ export async function POST(request: Request): Promise<Response> {
     typeof (body as Record<string, unknown>).preview !== "string" ||
     typeof (body as Record<string, unknown>).content !== "string" ||
     typeof (body as Record<string, unknown>).priceXrp !== "number" ||
-    typeof (body as Record<string, unknown>).publisherId !== "string"
+    typeof (body as Record<string, unknown>).publisherId !== "string" ||
+    typeof (body as Record<string, unknown>).walletAddress !== "string"
   ) {
     return Response.json({ error: "Missing or invalid fields" }, { status: 400 });
   }
 
-  const { title, preview, content, priceXrp, publisherId } = body as {
+  const { title, preview, content, priceXrp, publisherId, walletAddress } = body as {
     title: string;
     preview: string;
     content: string;
     priceXrp: number;
     publisherId: string;
+    walletAddress: string;
   };
 
   if (priceXrp <= 0 || priceXrp > 10) {
@@ -63,10 +65,13 @@ export async function POST(request: Request): Promise<Response> {
 
   const publisher = await prisma.publisher.findUnique({
     where: { id: publisherId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, walletAddress: true },
   });
   if (!publisher) {
     return Response.json({ error: "Publisher not found" }, { status: 404 });
+  }
+  if (publisher.walletAddress !== walletAddress) {
+    return Response.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const article = await prisma.article.create({

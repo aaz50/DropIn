@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useWallet } from "./WalletProvider";
 import type { ArticleSummary } from "@/types";
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
 type FormState = "idle" | "submitting" | "error";
 
 export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
+  const { address } = useWallet();
   const [title, setTitle] = useState("");
   const [preview, setPreview] = useState("");
   const [content, setContent] = useState("");
@@ -22,6 +24,12 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
     e.preventDefault();
     setFormState("submitting");
     setError("");
+
+    if (!address) {
+      setError("Connect your wallet before publishing");
+      setFormState("error");
+      return;
+    }
 
     const price = parseFloat(priceXrp);
     if (isNaN(price) || price <= 0 || price > 10) {
@@ -40,6 +48,7 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
           content: content.trim(),
           priceXrp: price,
           publisherId,
+          walletAddress: address,
         }),
       });
 
@@ -88,7 +97,7 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
         />
       </Field>
 
-      <Field label="Preview" hint="Shown before the paywall — 300 characters max" required>
+      <Field label="Preview" hint="Shown before the paywall — 400 characters max" required>
         <textarea
           value={preview}
           onChange={(e) => setPreview(e.target.value)}

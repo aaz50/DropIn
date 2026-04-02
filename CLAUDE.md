@@ -45,6 +45,10 @@ Both point to `file:./prisma/dev.db`.
 
 **XRPL client** (`src/lib/xrpl/client.ts`) — singleton, testnet (`wss://s.altnet.rippletest.net:51233`). Server-side only — never import in Client Components.
 
+**Testnet micropayments (why purchases fail with “destination not activated”)** — `PaywallGate` sends XRP to the article’s **publisher wallet** from the DB (not `NEXT_PUBLIC_PLATFORM_WALLET`). Seed uses `Wallet.generate()`, so each run prints **new** publisher addresses. Those addresses must **already exist on-ledger** (activated with enough XRP to meet reserve) before a reader’s micropayment can succeed. Article prices are far below the ledger’s **account reserve**, so a reader payment **cannot** create a brand-new account — the destination must be activated first. The [XRPL testnet faucet](https://xrpl.org/xrpl-testnet-faucet.html) **mints new testnet accounts with test XRP**; it does **not** send XRP to arbitrary addresses you paste in. So you cannot “fund” seed-printed publisher addresses by typing them into the faucet UI. Practical options: (1) send test XRP **from** a wallet that already has testnet XRP (e.g. a Crossmark account you created when the faucet gave you a funded account) **to** each publisher address shown in the seed output; or (2) replace publisher `walletAddress` in the DB with an address you obtained from the faucet’s **generated** account, if you align seed data manually. Use Crossmark on **Testnet** to match the server’s node (`XRPL_NODE_URL`).
+
+If the faucet experience you use **only** exposes new keys and never credits test XRP to arbitrary addresses, treat that the same as above: **some** wallet you control must hold testnet XRP and **pay** each publisher address enough to activate it on-ledger.
+
 **Wallet state** — React context in `WalletProvider.tsx`, address persisted to `localStorage`. Crossmark typed via `Window` interface augmentation in `src/types/crossmark.d.ts` (no official package).
 
 **Amounts** — stored as XRP (Float) in DB everywhere. Convert to drops (`Math.round(xrp * 1_000_000)`) only when constructing XRPL tx objects or calling verification.
@@ -79,3 +83,51 @@ export async function GET(
 ## Markdown Files
 
 All planning/notes `.md` files live in `markdown/` (gitignored). Only `README.md` and this file belong at the project root.
+
+## Claude Code — collaboration workflow (follow for substantial work)
+
+Use this loop so research and decisions live in **persistent files**, not only in chat history. Prefer **deep, codebase-grounded** understanding before coding.
+
+### 0. Before starting any work — read the markdown docs
+
+**Always read the relevant `markdown/` documents before touching code.** Context compresses across long conversations — the ground truth lives in the files, not in chat history. Read at minimum:
+- `markdown/plan.md` — current phases, tasks, decisions, and status
+- `markdown/phase2-changes.md` (or latest `phaseN-changes.md`) — what was actually built, deviations, and why
+- `markdown/Context.md` — product context, demo deadline, differentiators
+
+### 1. Research (understand deeply)
+
+- Ask Claude to **map the relevant code paths end-to-end** (call sites, data flow, env vars, failure modes), not a surface summary.
+- Require **findings in writing** in an existing doc under `markdown/` (e.g. append to `plan.md`, `phaseN-changes.md`, or `Context.md`) — **not** “chat-only” conclusions. Include file paths, key functions, and edge cases.
+
+### 2. Planning (`markdown/plan.md`)
+
+- Ask for a **detailed** `plan.md` (or updates to the current plan): phases, tasks, dependencies, risks.
+- Where possible, **cite reference material**: existing UI patterns in the repo, comparable components, ID/slug patterns, prior API shapes — so implementation stays consistent.
+
+### 3. Annotating (iterate without implementing)
+
+- Add **inline notes** in `plan.md` (or the active phase doc): corrections, constraints, “do not implement yet,” product decisions.
+- Send Claude back to the annotated document. Expect **several** review cycles (often **1–6**) until the plan matches intent. Keep **explicit**: no implementation until you say so.
+
+### 4. Pre-implementation — detailed todo list
+
+- Before coding, ask for a **step-by-step todo list** (similar to Cursor’s task list): ordered, checkable items tied to the plan.
+
+### 5. Implementation
+
+- Single prompt: **implement it all**; after each task or phase, **mark it complete in the plan document**; do not stop until all phases are done.
+- Rules: **no unnecessary comments or JSDoc**; **no `any`**; avoid **unguarded `unknown`** (project standard — use narrowing); run **`npm run typecheck`** frequently and fix regressions immediately.
+
+### 6. Document every change (granularly)
+
+After implementation, **append a section to the active `phaseN-changes.md`** (or create a new one) documenting:
+- Every file created or modified — and **why** (not just what)
+- Any deviation from the plan, with the reason
+- Key architectural decisions made during implementation
+- Bugs discovered and fixed mid-implementation
+- TypeScript / lint status after completion
+
+This is mandatory, not optional. Chat history compresses. The `markdown/` docs are the permanent record. If a change isn't documented here, it effectively didn't happen from the perspective of future sessions.
+
+The canonical implementation plan and checklist live in **`markdown/plan.md`**; high-level product context in **`markdown/Context.md`**. Keep new files in `markdown/` only when an existing doc is the wrong home.

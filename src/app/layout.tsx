@@ -4,6 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import { WalletProvider } from "@/components/WalletProvider";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { PublisherNavLink } from "@/components/PublisherNavLink";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-display",
@@ -66,11 +67,12 @@ export default function RootLayout({
             {/* Nav right */}
             <nav className="flex items-center gap-5">
               <Link
-                href="/publishers/register"
+                href="/browse"
                 className="text-[13px] font-medium text-ink-secondary hover:text-ink transition-colors tracking-[0.1px]"
               >
-                For publishers
+                Browse
               </Link>
+              <PublisherNavLink />
               <ConnectWalletButton />
             </nav>
           </header>

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/client";
-import type { PublisherProfile } from "@/types";
+import { toPublisherProfile } from "@/lib/db/mappers";
 
 export async function GET(
   _request: Request,
@@ -13,13 +13,5 @@ export async function GET(
     return Response.json({ error: "Publisher not found" }, { status: 404 });
   }
 
-  const profile: PublisherProfile = {
-    id: publisher.id,
-    name: publisher.name,
-    walletAddress: publisher.walletAddress,
-    description: publisher.description,
-    createdAt: publisher.createdAt.toISOString(),
-  };
-
-  return Response.json(profile);
+  return Response.json(toPublisherProfile(publisher));
 }

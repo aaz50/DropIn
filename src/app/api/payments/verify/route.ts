@@ -30,6 +30,14 @@ export async function POST(request: Request): Promise<Response> {
 
   const { txHash, articleId, readerAddress } = body as RequestBody;
 
+  // Validate txHash format — XRPL tx hashes are exactly 64 hex characters
+  if (!/^[0-9A-Fa-f]{64}$/.test(txHash)) {
+    return Response.json(
+      { success: false, error: "Invalid transaction hash format" },
+      { status: 400 }
+    );
+  }
+
   // Fetch article + publisher wallet for verification
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -50,6 +58,8 @@ export async function POST(request: Request): Promise<Response> {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Verification failed";
+    // Log full error server-side so it's visible in terminal during dev
+    console.error("[payments/verify] XRPL verification failed:", err);
     return Response.json({ success: false, error: message }, { status: 400 });
   }
 

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import type { PublisherProfile } from "@/types";
 
 type FormState = "idle" | "submitting" | "error";
@@ -36,6 +35,7 @@ export default function RegisterPage() {
       }
 
       const profile = data as PublisherProfile;
+      setFormState("idle"); // clear spinner before navigation
       router.push(`/publishers/${profile.id}/dashboard`);
     } catch {
       setError("Request failed — please try again");
@@ -124,12 +124,6 @@ export default function RegisterPage() {
         </form>
       </div>
 
-      <p className="text-center text-[13px] text-ink-muted mt-5">
-        Already registered?{" "}
-        <Link href="/" className="text-accent font-medium hover:underline">
-          Browse articles
-        </Link>
-      </p>
     </div>
   );
 }

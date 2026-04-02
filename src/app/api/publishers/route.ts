@@ -1,6 +1,28 @@
 import { isValidClassicAddress } from "xrpl";
 import { prisma } from "@/lib/db/client";
-import type { PublisherProfile } from "@/types";
+import { toPublisherProfile } from "@/lib/db/mappers";
+
+export async function GET(request: Request): Promise<Response> {
+  const { searchParams } = new URL(request.url);
+  const walletAddress = searchParams.get("walletAddress");
+
+  if (!walletAddress) {
+    return Response.json(
+      { error: "walletAddress query param required" },
+      { status: 400 }
+    );
+  }
+
+  const publisher = await prisma.publisher.findUnique({
+    where: { walletAddress },
+  });
+
+  if (!publisher) {
+    return Response.json({ error: "Publisher not found" }, { status: 404 });
+  }
+
+  return Response.json(toPublisherProfile(publisher));
+}
 
 export async function POST(request: Request): Promise<Response> {
   let body: unknown;
@@ -48,15 +70,7 @@ export async function POST(request: Request): Promise<Response> {
       },
     });
 
-    const profile: PublisherProfile = {
-      id: publisher.id,
-      name: publisher.name,
-      walletAddress: publisher.walletAddress,
-      description: publisher.description,
-      createdAt: publisher.createdAt.toISOString(),
-    };
-
-    return Response.json(profile, { status: 201 });
+    return Response.json(toPublisherProfile(publisher), { status: 201 });
   } catch (err: unknown) {
     if (
       typeof err === "object" &&

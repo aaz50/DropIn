@@ -8,7 +8,7 @@ function truncateAddress(address: string): string {
 }
 
 export function ConnectWalletButton() {
-  const { address, isConnected, connect, disconnect } = useWallet();
+  const { address, isConnected, connect, disconnect, connectError } = useWallet();
   const [crossmarkMissing, setCrossmarkMissing] = useState(false);
 
   useEffect(() => {
@@ -71,22 +71,27 @@ export function ConnectWalletButton() {
 
   // Default: connect button (pill-shaped, matches prototype)
   return (
-    <button
-      onClick={connect}
-      className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-ink-ghost bg-transparent text-[13px] font-medium text-ink hover:border-ink-muted hover:bg-surface transition-all"
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={connect}
+        className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-ink-ghost bg-transparent text-[13px] font-medium text-ink hover:border-ink-muted hover:bg-surface transition-all"
       >
-        <rect x="2" y="6" width="20" height="12" rx="2" />
-        <circle cx="16" cy="12" r="1.5" fill="currentColor" stroke="none" />
-      </svg>
-      Connect wallet
-    </button>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <rect x="2" y="6" width="20" height="12" rx="2" />
+          <circle cx="16" cy="12" r="1.5" fill="currentColor" stroke="none" />
+        </svg>
+        Connect wallet
+      </button>
+      {connectError && (
+        <p className="text-[11px] text-negative font-medium">{connectError}</p>
+      )}
+    </div>
   );
 }
