@@ -82,7 +82,7 @@ export default function RootLayout({
           <footer className="text-center py-6 text-[11px] text-ink-ghost tracking-[0.4px]">
             Built on the{" "}
             <span className="text-accent">XRP Ledger</span>
-            {" "}· Transactions settle in 3–5 seconds
+            {" "}·
           </footer>
         </WalletProvider>
       </body>

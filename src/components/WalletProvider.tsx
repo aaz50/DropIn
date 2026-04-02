@@ -41,6 +41,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await window.xrpl.crossmark.methods.signInAndWait();
       const addr = result.response.data.address;
+      if (!addr) {
+        setConnectError("Wallet connection failed — please try again");
+        return;
+      }
       setAddress(addr);
       localStorage.setItem(STORAGE_KEY, addr);
     } catch {

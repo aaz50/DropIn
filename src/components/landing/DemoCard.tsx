@@ -17,9 +17,9 @@ export function DemoCard() {
     if (phase !== "idle") return;
     clearTimers();
     setPhase("confirming");
-    timers.current.push(setTimeout(() => setPhase("verifying"), 1200));
-    timers.current.push(setTimeout(() => setPhase("unlocked"), 2800));
-    timers.current.push(setTimeout(() => setPhase("idle"), 7500));
+    timers.current.push(setTimeout(() => setPhase("verifying"), 400));
+    timers.current.push(setTimeout(() => setPhase("unlocked"), 1000));
+    timers.current.push(setTimeout(() => setPhase("idle"), 9000));
   }, [phase]);
 
   useEffect(() => () => clearTimers(), []);
@@ -53,12 +53,15 @@ export function DemoCard() {
 
           <p className="text-[13px] leading-[1.7] text-ink-secondary mb-2">
             The economics of online content have been broken for two decades.
-            Publishers know their work has value...
+            Publishers know their work has value, yet most give it away because
+            no viable micro-billing layer existed — until now.
           </p>
           {phase !== "unlocked" && (
-            <p className="text-[13px] leading-[1.7] text-ink-secondary mb-4 opacity-20 line-clamp-2">
+            <p className="text-[13px] leading-[1.7] text-ink-muted mb-4">
               Credit card networks impose a minimum $0.30 fee per transaction,
-              which means any content priced below...
+              which makes any content priced below a few dollars economically
+              irrational to charge for. Publishers abandoned micropayments not
+              by choice, but by necessity. The XRP&nbsp;Ledger changes&nbsp;…
             </p>
           )}
 
