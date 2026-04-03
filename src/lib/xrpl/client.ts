@@ -26,7 +26,6 @@ export async function getXrplClient(): Promise<Client> {
     try {
       await existing.disconnect();
     } catch {
-      // ignore — we're replacing it anyway
     }
     const fresh = new Client(XRPL_NODE_URL);
     await fresh.connect();
