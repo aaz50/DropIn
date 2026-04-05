@@ -55,7 +55,7 @@ The process per ledger round:
 Throughput: 1,500+ TPS. Finality: 3-5 seconds. Energy: negligible compared to PoW. The tradeoff is that it requires some degree of trust in validator selection — which is why validator diversity is actively encouraged by Ripple and the XRPL Foundation.
 
 Understanding this is essential for any developer building on XRPL, because it shapes what guarantees you can make about finality and transaction ordering.`,
-            priceXrp: 0.1,
+            price: 0.1,
           },
           {
             title: "Token Escrow on XRPL: The XLS-85 Standard Explained",
@@ -89,7 +89,7 @@ This is the architecture Dropin uses for its advanced budget mode — transformi
 - Escrow objects consume reserve on the ledger (2 XRP base reserve + 0.2 XRP per object)
 - Conditional escrows require generating a PREIMAGE-SHA-256 condition off-chain
 - Token escrow respects trust lines — the destination must have a trust line for the issued currency`,
-            priceXrp: 0.15,
+            price: 0.15,
           },
           {
             title: "RLUSD: Ripple's Dollar Stablecoin on XRPL",
@@ -120,7 +120,7 @@ RLUSD is the natural choice for applications that want price-stable micropayment
 ## Regulatory Status
 
 RLUSD operates under a limited-purpose trust charter from the NYDFS (New York Department of Financial Services). Monthly attestation reports are published by an independent accounting firm.`,
-            priceXrp: 0.05,
+            price: 0.05,
           },
         ],
       },
@@ -162,7 +162,7 @@ Three things have changed:
 3. **Budget model**: The reading budget concept (pre-fund, auto-spend) removes per-article decision fatigue — the core failure mode of Blendle. Readers decide once per month, not once per article.
 
 The window exists. Whether it stays open depends on execution.`,
-            priceXrp: 0.1,
+            price: 0.1,
           },
           {
             title: "On-Chain Publisher Identity: XRPL Credentials Explained",
@@ -196,7 +196,7 @@ When a reader visits a publisher's page, the platform queries the XRPL for an ac
 If found and not expired, the publisher badge is shown. No centralized database required.
 
 This is the architecture Dropin uses for the Sprint 2 publisher verification feature.`,
-            priceXrp: 0.2,
+            price: 0.2,
           },
         ],
       },

@@ -38,7 +38,7 @@ export default function RegisterPage() {
       setFormState("idle"); // clear spinner before navigation
       router.push(`/publishers/${profile.id}/dashboard`);
     } catch {
-      setError("Request failed — please try again");
+      setError("Request failed. Please try again.");
       setFormState("error");
     }
   }
@@ -80,7 +80,7 @@ export default function RegisterPage() {
 
           <FormField
             label="XRPL wallet address"
-            hint="Your address starting with 'r' — payments go directly here"
+            hint="Your address starting with 'r'. Payments go directly here."
             required
           >
             <input

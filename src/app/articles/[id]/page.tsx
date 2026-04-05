@@ -66,7 +66,7 @@ export default async function ArticlePage({ params }: Props) {
           </p>
           <p className="text-[12px] text-ink-muted mt-0.5">
             {formatDate(article.createdAt)} ·{" "}
-            <span className="text-accent font-semibold">{article.priceXrp} XRP</span>
+            <span className="text-accent font-semibold">{Number(article.price)} {article.currency}</span>
           </p>
         </div>
       </div>
@@ -75,7 +75,8 @@ export default async function ArticlePage({ params }: Props) {
       <div className="animate-fade-up" style={{ animationDelay: "100ms" }}>
         <PaywallGate
           articleId={article.id}
-          priceXrp={article.priceXrp}
+          price={Number(article.price)}
+          currency={article.currency}
           publisherWalletAddress={article.publisher.walletAddress}
           preview={article.preview}
         />

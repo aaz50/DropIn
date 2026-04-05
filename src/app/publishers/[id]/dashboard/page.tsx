@@ -118,7 +118,7 @@ export default function DashboardPage({ params }: Props) {
         <div className="grid grid-cols-3 gap-4 mb-10">
           <StatBox
             label="Revenue"
-            value={`${earnings.totalXrp.toFixed(2)} XRP`}
+            value={`${earnings.totalXrp.toFixed(2)}`}
             accent
           />
           <StatBox label="Articles sold" value={String(earnings.paymentCount)} />
@@ -197,7 +197,7 @@ export default function DashboardPage({ params }: Props) {
                       </td>
                       <td className="px-5 py-4">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-accent-wash border border-accent-glow text-accent-deep text-[12px] font-semibold font-mono">
-                          {article.priceXrp}
+                          {article.price} {article.currency}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-[14px] text-ink-secondary">
@@ -253,7 +253,7 @@ export default function DashboardPage({ params }: Props) {
                     </td>
                     <td className="px-5 py-4">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-accent-wash border border-accent-glow text-accent-deep text-[12px] font-semibold font-mono">
-                        {p.amount}
+                        {p.amount} {p.currency}
                       </span>
                     </td>
                     <td className="px-5 py-4 font-mono text-[11px] text-ink-muted hidden md:table-cell">

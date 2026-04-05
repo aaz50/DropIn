@@ -18,6 +18,25 @@ export async function GET(
 
   const { searchParams } = new URL(request.url);
   const readerAddress = searchParams.get("readerAddress");
+  const publisherAddress = searchParams.get("publisherAddress");
+
+  // Publisher previewing their own article — same wallet-based auth as article creation
+  if (publisherAddress && publisherAddress === article.publisher.walletAddress) {
+    const full: ArticleFull & { publisherWalletAddress: string } = {
+      id: article.id,
+      title: article.title,
+      preview: article.preview,
+      content: article.content,
+      price: Number(article.price),
+      currency: article.currency,
+      issuer: article.issuer ?? undefined,
+      publisherName: article.publisher.name,
+      publisherId: article.publisher.id,
+      publisherWalletAddress: article.publisher.walletAddress,
+      createdAt: article.createdAt.toISOString(),
+    };
+    return Response.json(full);
+  }
 
   // Check if this reader has already paid for this article
   if (readerAddress) {
@@ -34,7 +53,9 @@ export async function GET(
         title: article.title,
         preview: article.preview,
         content: article.content,
-        priceXrp: article.priceXrp,
+        price: Number(article.price),
+        currency: article.currency,
+        issuer: article.issuer ?? undefined,
         publisherName: article.publisher.name,
         publisherId: article.publisher.id,
         publisherWalletAddress: article.publisher.walletAddress,
@@ -49,7 +70,9 @@ export async function GET(
     id: article.id,
     title: article.title,
     preview: article.preview,
-    priceXrp: article.priceXrp,
+    price: Number(article.price),
+    currency: article.currency,
+    issuer: article.issuer ?? undefined,
     publisherName: article.publisher.name,
     publisherId: article.publisher.id,
     publisherWalletAddress: article.publisher.walletAddress,

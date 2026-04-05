@@ -146,7 +146,7 @@ export default function LandingPage() {
               },
               {
                 title: "DropIn is the platform",
-                body: "Publishers register once, add their articles, and set their prices. Readers discover, unlock, and pay — all in one place. No payment processor to configure. No code to write.",
+                body: "Publishers register once, add their articles, and set their prices. Readers discover, unlock, and pay. All in one place. No payment processor to configure. No code to write.",
               },
             ].map((card, i) => (
               <Reveal key={card.title} delay={i * 80}>

@@ -24,7 +24,8 @@ export async function GET(request: Request): Promise<Response> {
   const body: PaymentRecord[] = payments.map((p) => ({
     id: p.id,
     txHash: p.txHash,
-    amount: p.amount,
+    amount: Number(p.amount),
+    currency: p.currency,
     articleId: p.articleId,
     articleTitle: p.article.title,
     readerAddress: p.reader.walletAddress,
