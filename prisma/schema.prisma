@@ -22,7 +22,9 @@ model Article {
   title       String
   preview     String
   content     String
-  priceXrp    Float
+  price       Decimal
+  currency    String    @default("XRP")
+  issuer      String?
   publisherId String
   publisher   Publisher @relation(fields: [publisherId], references: [id])
   createdAt   DateTime  @default(now())
@@ -39,7 +41,8 @@ model Reader {
 model Payment {
   id          String    @id @default(cuid())
   txHash      String    @unique
-  amount      Float
+  amount      Decimal
+  currency    String    @default("XRP")
   articleId   String
   article     Article   @relation(fields: [articleId], references: [id])
   readerId    String

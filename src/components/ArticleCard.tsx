@@ -47,7 +47,7 @@ export function ArticleCard({ article, index }: Props) {
       {/* Right: price badge */}
       <div className="flex-shrink-0 mt-[38px]">
         <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-accent-wash border border-accent-glow text-accent-deep text-[13px] font-semibold font-mono tracking-[-0.3px] group-hover:bg-accent-glow transition-colors">
-          {article.priceXrp} XRP
+          {article.price} {article.currency}
         </span>
       </div>
     </Link>

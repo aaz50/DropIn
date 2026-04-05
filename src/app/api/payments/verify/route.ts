@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/client";
 import { verifyPayment } from "@/lib/xrpl/verify";
+import { RLUSD_CURRENCY, RLUSD_ISSUER } from "@/lib/xrpl/currency";
 
 type RequestBody = {
   txHash: string;
@@ -48,13 +49,34 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ success: false, error: "Article not found" }, { status: 404 });
   }
 
+  // Resolve expected currency and issuer from article + server env
+  const articleCurrency = article.currency;
+  let expectedCurrency: string;
+  let expectedIssuer: string | undefined;
+
+  if (articleCurrency === "RLUSD") {
+    expectedCurrency = RLUSD_CURRENCY;
+    // Server-side env is authoritative — never trust DB issuer alone
+    expectedIssuer = RLUSD_ISSUER;
+    if (!expectedIssuer) {
+      return Response.json(
+        { success: false, error: "RLUSD issuer not configured on server" },
+        { status: 500 }
+      );
+    }
+  } else {
+    expectedCurrency = "XRP";
+  }
+
   // Verify the XRPL transaction — partial-payment-safe
   let verifyResult;
   try {
     verifyResult = await verifyPayment(
       txHash,
       article.publisher.walletAddress,
-      Math.round(article.priceXrp * 1_000_000)
+      Number(article.price),
+      expectedCurrency,
+      expectedIssuer
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Verification failed";
@@ -75,6 +97,7 @@ export async function POST(request: Request): Promise<Response> {
       data: {
         txHash: verifyResult.txHash,
         amount: verifyResult.amountXrp,
+        currency: articleCurrency,
         articleId,
         readerId: reader.id,
         publisherId: article.publisherId,

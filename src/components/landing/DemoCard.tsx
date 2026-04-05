@@ -77,7 +77,7 @@ export function DemoCard() {
             <p className="text-[13px] leading-[1.7] text-ink-secondary mb-3">
               The economics of online content have been broken for two decades.
               Publishers know their work has value, yet most give it away because
-              no viable micro-billing layer existed — until now.
+              no viable micro-billing layer existed. Until now.
             </p>
 
             {phase === "unlocked" ? (

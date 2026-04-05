@@ -42,13 +42,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const result = await window.xrpl.crossmark.methods.signInAndWait();
       const addr = result.response.data.address;
       if (!addr) {
-        setConnectError("Wallet connection failed — please try again");
+        setConnectError("Wallet connection failed. Please try again.");
         return;
       }
       setAddress(addr);
       localStorage.setItem(STORAGE_KEY, addr);
     } catch {
-      setConnectError("Wallet connection failed — please try again");
+      setConnectError("Wallet connection failed. Please try again.");
     }
   }, []);
 

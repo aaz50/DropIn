@@ -10,13 +10,15 @@ type Props = {
 };
 
 type FormState = "idle" | "submitting" | "error";
+type Currency = "XRP" | "RLUSD";
 
 export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
   const { address } = useWallet();
   const [title, setTitle] = useState("");
   const [preview, setPreview] = useState("");
   const [content, setContent] = useState("");
-  const [priceXrp, setPriceXrp] = useState("0.10");
+  const [price, setPrice] = useState("0.10");
+  const [currency, setCurrency] = useState<Currency>("XRP");
   const [formState, setFormState] = useState<FormState>("idle");
   const [error, setError] = useState("");
 
@@ -31,9 +33,10 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
       return;
     }
 
-    const price = parseFloat(priceXrp);
-    if (isNaN(price) || price <= 0 || price > 10) {
-      setError("Price must be between 0.01 and 10 XRP");
+    const parsedPrice = parseFloat(price);
+    const maxPrice = currency === "RLUSD" ? 100 : 10;
+    if (isNaN(parsedPrice) || parsedPrice <= 0 || parsedPrice > maxPrice) {
+      setError(`Price must be between 0.01 and ${maxPrice} ${currency}`);
       setFormState("error");
       return;
     }
@@ -46,7 +49,8 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
           title: title.trim(),
           preview: preview.trim(),
           content: content.trim(),
-          priceXrp: price,
+          price: parsedPrice,
+          currency,
           publisherId,
           walletAddress: address,
         }),
@@ -55,22 +59,20 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
       const data = (await res.json()) as ArticleSummary | { error: string };
 
       if (!res.ok) {
-        setError(
-          "error" in data ? data.error : "Failed to create article"
-        );
+        setError("error" in data ? data.error : "Failed to create article");
         setFormState("error");
         return;
       }
 
-      // Reset form
       setTitle("");
       setPreview("");
       setContent("");
-      setPriceXrp("0.10");
+      setPrice("0.10");
+      setCurrency("XRP");
       setFormState("idle");
       onSuccess(data as ArticleSummary);
     } catch {
-      setError("Request failed — please try again");
+      setError("Request failed. Please try again.");
       setFormState("error");
     }
   }
@@ -97,11 +99,11 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
         />
       </Field>
 
-      <Field label="Preview" hint="Shown before the paywall — 400 characters max" required>
+      <Field label="Preview" hint="Shown before the paywall. 400 characters max." required>
         <textarea
           value={preview}
           onChange={(e) => setPreview(e.target.value)}
-          placeholder="Hook your reader — first 1–2 sentences..."
+          placeholder="Hook your reader. First 1–2 sentences..."
           required
           maxLength={400}
           rows={3}
@@ -123,18 +125,34 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
         />
       </Field>
 
-      <Field label="Price (XRP)" hint="e.g. 0.05 · 0.10 · 0.25" required>
-        <input
-          type="number"
-          value={priceXrp}
-          onChange={(e) => setPriceXrp(e.target.value)}
-          step="0.01"
-          min="0.01"
-          max="10"
-          required
-          className="field-input font-mono w-36"
-        />
-      </Field>
+      <div className="flex gap-4 items-end">
+        <Field label="Currency" required>
+          <select
+            value={currency}
+            onChange={(e) => {
+              setCurrency(e.target.value as Currency);
+              setPrice(e.target.value === "RLUSD" ? "0.10" : "0.10");
+            }}
+            className="field-input w-32"
+          >
+            <option value="XRP">XRP</option>
+            <option value="RLUSD">RLUSD</option>
+          </select>
+        </Field>
+
+        <Field label={`Price (${currency})`} required>
+          <input
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            step="0.01"
+            min="0.01"
+            max={currency === "RLUSD" ? "100" : "10"}
+            required
+            className="field-input font-mono w-36"
+          />
+        </Field>
+      </div>
 
       <button
         type="submit"

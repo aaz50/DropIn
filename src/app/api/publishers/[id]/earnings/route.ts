@@ -46,13 +46,14 @@ export async function GET(
   });
 
   const body: EarningsResponse = {
-    totalXrp: aggregate._sum.amount ?? 0,
+    totalXrp: Number(aggregate._sum.amount ?? 0),
     paymentCount: aggregate._count.id,
     uniqueReaders: uniqueReaders.length,
     payments: payments.map((p) => ({
       id: p.id,
       txHash: p.txHash,
-      amount: p.amount,
+      amount: Number(p.amount),
+      currency: p.currency,
       articleId: p.articleId,
       articleTitle: p.article.title,
       readerAddress: p.reader.walletAddress,
