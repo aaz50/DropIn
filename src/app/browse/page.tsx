@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function BrowsePage() {
   const articles = await prisma.article.findMany({
     include: { publisher: { select: { id: true, name: true } } },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: "asc" },
   });
 
   const summaries: ArticleSummary[] = articles.map((a) => ({

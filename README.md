@@ -10,20 +10,19 @@ XRPL's near-zero transaction fees (~$0.00002 per tx) make per-article pricing ec
 
 **For readers**
 - Connect an XRPL wallet (Crossmark) to unlock articles instantly
-- Pay in XRP or RLUSD (USD-pegged stablecoin)
+- Pay in XRP or RLUSD
 - Automatic trust line setup for RLUSD articles
 
 **For publishers**
 - Register a wallet address and start publishing immediately
 - Set individual prices per article in XRP or RLUSD
-- Rich text editor with bold, italic, and heading support
 - Earnings dashboard with revenue stats, sales counts, and payment history
 - On-chain verification via XRPL Credentials
 
 **XRPL integration**
 - Payments go directly to the publisher's wallet — no custodial holding
 - Payment verification reads from the ledger directly, not from Crossmark's response
-- Publisher identity attested on-chain via `CredentialCreate`
+- Publisher identity attested on-chain via XRPL credentials
 - All XRPL features used are live on mainnet (testnet used for development)
 
 ---
@@ -90,11 +89,11 @@ npx prisma db push
 npx prisma db seed
 ```
 
-`db seed` creates two publishers and five sample articles covering XRPL consensus, AMMs, the DEX, RLUSD, and Credentials.
+`db seed` creates two publishers and five sample articles covering some XRPL features.
 
 ### 4. Activate publisher wallets on testnet
 
-The seed generates fresh wallet addresses for publishers. These need to exist on-ledger (funded with at least 10 XRP) before readers can pay them — XRPL micropayments cannot create a new account if the payment amount is below the base reserve.
+The seed generates fresh wallet addresses for publishers. These need to exist on-ledger (funded with at least 10 XRP) before readers can pay them. XRPL micropayments cannot create a new account if the payment amount is below the base reserve.
 
 From your Crossmark testnet wallet, send at least 10 XRP to each publisher address printed by the seed output.
 
