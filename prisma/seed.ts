@@ -5,15 +5,15 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Generate fresh testnet wallets for publishers.
-  // IMPORTANT: Fund these with XRP using the XRPL Testnet Faucet:
-  // https://xrpl.org/xrp-testnet-faucet.html
+  // After seeding, fund these addresses using a funded Crossmark testnet wallet:
+  // send at least 15 XRP to each address to activate it on-ledger.
   const publisher1Wallet = Wallet.generate();
   const publisher2Wallet = Wallet.generate();
 
-  console.log("\n=== FUND THESE ON XRPL TESTNET FAUCET ===");
+  console.log("\n=== FUND THESE ON XRPL TESTNET ===");
   console.log("Publisher 1:", publisher1Wallet.address);
   console.log("Publisher 2:", publisher2Wallet.address);
-  console.log("=========================================\n");
+  console.log("===================================\n");
 
   // Delete in dependency order: Payment → Article → Publisher / Reader
   await prisma.payment.deleteMany();
@@ -21,105 +21,85 @@ async function main() {
   await prisma.publisher.deleteMany();
   await prisma.reader.deleteMany();
 
-  const publisher1 = await prisma.publisher.create({
+  await prisma.publisher.create({
     data: {
       name: "The Ledger Report",
       walletAddress: publisher1Wallet.address,
       description:
-        "In-depth coverage of blockchain technology, DeFi, and the future of digital finance.",
+        "In-depth technical coverage of the XRP Ledger — consensus, tokens, and protocol primitives.",
       articles: {
         create: [
           {
             title: "How XRPL's Consensus Protocol Actually Works",
             preview:
-              "Most people assume XRP uses proof-of-work or proof-of-stake. It doesn't. The XRP Ledger uses a Byzantine Fault Tolerant consensus protocol that's fundamentally different from both — and far more efficient.",
-            content: `Most people assume XRP uses proof-of-work or proof-of-stake. It doesn't. The XRP Ledger uses a Byzantine Fault Tolerant consensus protocol that's fundamentally different from both — and far more efficient.
+              "Most blockchains reach agreement through proof-of-work or proof-of-stake. The XRP Ledger uses neither. Its consensus protocol closes ledgers in 3 to 5 seconds without mining, without staking, and without forks — and understanding how it works reveals what makes XRPL's design unusual.",
+            content: `Most blockchains reach agreement through proof-of-work or proof-of-stake. The XRP Ledger uses neither. Its consensus protocol closes ledgers in 3 to 5 seconds without mining, without staking, and without forks.
 
-## The Problem With Mining
+## The Core Idea
 
-Bitcoin's proof-of-work requires nodes to compete to solve cryptographic puzzles. This consumes enormous energy and limits throughput to ~7 transactions per second. Proof-of-stake improves efficiency but introduces capital lock-up requirements that create their own centralization pressures.
+Every XRPL node called a validator maintains a Unique Node List — a curated set of other validators it trusts to behave honestly. For a transaction to be included in a ledger, it needs to reach 80% agreement across a validator's trusted peers. No single validator wins the round. Instead, they converge through iterative voting.
 
-## XRPL's Unique Ledger Consensus Protocol (LCP)
+## How a Ledger Closes
 
-The XRPL uses a Unique Node List (UNL) approach. Each validator trusts a curated list of other validators. For a transaction to clear, it needs agreement from 80% of a validator's trusted peers. This doesn't require energy expenditure — it requires communication.
+During each round, validators collect proposed transactions from the network and broadcast a candidate set to their peers. Validators compare notes, and transactions that fall below the agreement threshold get removed from the candidate set. After several rounds of narrowing, when the remaining transactions have achieved at least 80% agreement, the ledger closes and is cryptographically signed. This process repeats every 3 to 5 seconds under normal network conditions.
 
-The process per ledger round:
-1. Validators collect proposed transactions
-2. Each validator broadcasts a proposal set
-3. Iterative voting rounds filter out transactions with low agreement
-4. After ~3-5 rounds, >80% consensus triggers ledger close
-5. Final ledger is cryptographically signed
+## What This Means in Practice
 
-## Why This Matters
+The XRPL processes over 1,500 transactions per second. Finality is deterministic — there are no forks to resolve and no waiting for additional block confirmations. A transaction included in a closed ledger is final. Transaction fees are not competitive bids. Validators use a small base fee that adjusts to current network load rather than allowing a bidding war.
 
-Throughput: 1,500+ TPS. Finality: 3-5 seconds. Energy: negligible compared to PoW. The tradeoff is that it requires some degree of trust in validator selection — which is why validator diversity is actively encouraged by Ripple and the XRPL Foundation.
+## Energy and Decentralization
 
-Understanding this is essential for any developer building on XRPL, because it shapes what guarantees you can make about finality and transaction ordering.`,
+Because consensus does not require computational work, validators can run on standard server hardware. The energy consumption of the entire XRPL validator network is negligible compared to proof-of-work systems. The XRPL Foundation and Ripple actively encourage independent validator operation. Any operator can run a validator, and diversifying the validator set is an ongoing community effort.`,
             price: 0.1,
           },
           {
-            title: "Token Escrow on XRPL: The XLS-85 Standard Explained",
+            title: "AMMs on XRPL: How the XLS-30 Amendment Works",
             preview:
-              "XRPL's new Token Escrow amendment (XLS-85) enables time-locked or condition-locked escrow for fungible tokens — not just XRP. Here's how it works and why it enables entirely new payment architectures.",
-            content: `XRPL's new Token Escrow amendment (XLS-85) enables time-locked or condition-locked escrow for fungible tokens — not just XRP. Here's how it works and why it enables entirely new payment architectures.
+              "In March 2024, the XLS-30 amendment brought Automated Market Makers to the XRP Ledger mainnet. Unlike AMMs on smart-contract chains, XRPL AMMs are first-class ledger objects built directly into the protocol. Here is how the design works and what makes it different.",
+            content: `In March 2024, the XLS-30 amendment brought Automated Market Makers to the XRP Ledger mainnet. Unlike AMMs that run as smart contracts on other chains, XRPL AMMs are first-class ledger objects — part of the protocol itself, not code deployed on top of it.
 
-## What Is Escrow?
+## What Is an AMM Pool
 
-Escrow is a mechanism where funds are locked until a condition is met or a time expires. XRPL has supported XRP escrow since 2017. The XLS-85 amendment extends this to any Issued Currency or MPT (Multi-Purpose Token).
+An AMM pool on XRPL holds two assets: XRP paired with a token, or two different tokens paired together. Anyone can become a liquidity provider by depositing both assets in proportion to the current pool ratio. In return they receive LP tokens representing their share of the pool. When they withdraw, they receive their proportional share of the pool including any fees that accumulated while their liquidity was active.
 
-## How Token Escrow Works
+## The Constant Product Formula
 
-A token escrow is an on-chain object with:
-- **Amount**: The token and quantity locked
-- **Destination**: Who can claim the funds
-- **FinishAfter**: Earliest time the destination can claim
-- **CancelAfter**: Time after which the source can reclaim
-- **Condition**: Optional cryptographic condition (PREIMAGE-SHA-256)
+XRPL AMMs use a constant product formula to determine exchange rates. When one asset is removed from the pool, the price of the remaining asset increases proportionally, keeping the product of the two reserves constant. This creates automatic price discovery without a traditional order book on either side of the pool.
 
-Creating an escrow locks the tokens immediately. They're removed from the source wallet's usable balance. The destination claims with an EscrowFinish transaction.
+## The Continuous Auction Mechanism
 
-## Reading Budgets via Token Escrow
+XRPL's AMM includes a feature called the Continuous Auction Mechanism. This is a single-slot auction that gives one arbitrageur the right to trade at a discounted rate. Instead of multiple bots racing to capture price discrepancies and paying fees to external validators, the auction price flows back into the pool and benefits liquidity providers. The design keeps arbitrage value inside the protocol rather than extracting it externally.
 
-One compelling use case: pre-funded reading budgets. A reader locks RLUSD into an escrow with a monthly expiry. A platform (as destination) can draw down from this escrow as articles are unlocked. The reader sets a budget once; the platform handles per-article deductions without requiring per-click wallet signatures.
+## Integration With the Order Book DEX
 
-This is the architecture Dropin uses for its advanced budget mode — transforming micropayments from a per-decision friction point into a periodic budgeting decision.
+XRPL has had a built-in order book exchange since its launch. AMMs work alongside it rather than replacing it. When the protocol routes a payment or fills an offer, it evaluates both the AMM pool and the order book and uses whichever path delivers the better rate, or combines both for optimal execution. This gives the protocol access to deeper liquidity across both market structures simultaneously.
 
-## Key Developer Considerations
+## Trading Fees
 
-- Escrow objects consume reserve on the ledger (2 XRP base reserve + 0.2 XRP per object)
-- Conditional escrows require generating a PREIMAGE-SHA-256 condition off-chain
-- Token escrow respects trust lines — the destination must have a trust line for the issued currency`,
+Liquidity providers set a trading fee when creating an AMM pool, configurable from 0% to 1%. These fees accumulate in the pool and are distributed proportionally to liquidity providers when they withdraw their position.`,
             price: 0.15,
           },
           {
             title: "RLUSD: Ripple's Dollar Stablecoin on XRPL",
             preview:
-              "Ripple launched RLUSD in late 2024 — a USD-pegged stablecoin issued natively on the XRP Ledger. Here's what makes it different from USDC or USDT, and why it matters for XRPL-based applications.",
-            content: `Ripple launched RLUSD in late 2024 — a USD-pegged stablecoin issued natively on the XRP Ledger. Here's what makes it different from USDC or USDT, and why it matters for XRPL-based applications.
+              "Ripple launched RLUSD in late 2024 — a USD-pegged stablecoin issued natively on both the XRP Ledger and Ethereum. Here is what distinguishes it from other stablecoins and how it integrates with the XRPL protocol.",
+            content: `Ripple launched RLUSD in late 2024, a USD-pegged stablecoin available on both the XRP Ledger and Ethereum. Each RLUSD is backed 1:1 by dollar deposits, US Treasury bonds, and cash equivalents held in a regulated trust structure.
 
-## The Basics
+## Regulatory Framework
 
-RLUSD is a 1:1 USD-backed stablecoin issued by Ripple on both XRP Ledger and Ethereum. Unlike algorithmic stablecoins, each RLUSD is backed by dollar deposits, US Treasury bonds, and cash equivalents held in a regulated trust structure.
+RLUSD operates under a limited-purpose trust charter granted by the New York Department of Financial Services. This regulatory classification places it under similar oversight to other regulated stablecoins. Monthly attestation reports confirming reserves are published by an independent accounting firm, providing ongoing transparency to holders.
 
-## Why Issue on XRPL?
+## Why the XRP Ledger
 
-XRPL's native DEX and payment rails make it uniquely suited for stablecoin use cases:
-- Sub-cent transaction fees make micro-transfers economically viable
-- 3-5 second finality enables real-time settlement
-- Built-in DEX allows instant XRP/RLUSD conversion at market price
-- No smart contract risk — asset issuance is a protocol primitive
+The XRP Ledger's protocol primitives make it well-suited for stablecoin use cases. Transaction fees are fractions of a cent, making small transfers economically practical. Ledger finality arrives in 3 to 5 seconds, enabling near-real-time settlement. The built-in DEX and AMM pools allow conversion between XRP and RLUSD at market rates with no external bridge or wrapped asset required. Asset issuance on XRPL is a protocol-level feature — there are no smart contracts to audit or upgrade.
 
 ## Trust Lines
 
-RLUSD operates via XRPL's trust line system. Before receiving RLUSD, a wallet must establish a trust line to Ripple's issuing address. This is a one-time on-chain operation. Applications can check for and create trust lines programmatically using xrpl.js.
+Before a wallet can hold RLUSD, it must establish a trust line to Ripple's issuing address on the ledger. This is a one-time on-chain operation that signals the wallet is willing to hold the asset up to a specified limit. Once the trust line is set, sending and receiving RLUSD works identically to any other XRPL payment.
 
-## For Developers Building Payments
+## Testnet vs Mainnet
 
-RLUSD is the natural choice for applications that want price-stable micropayments. An article priced at $0.10 stays at $0.10 regardless of XRP price movements. The Dropin platform supports both XRP and RLUSD payments, letting publishers set prices in stable dollar terms.
-
-## Regulatory Status
-
-RLUSD operates under a limited-purpose trust charter from the NYDFS (New York Department of Financial Services). Monthly attestation reports are published by an independent accounting firm.`,
+RLUSD is available on both XRPL mainnet and testnet, but each network uses a different issuer address. Applications should read the issuer address from configuration rather than hardcoding it, so the same codebase can point at either network without modification.`,
             price: 0.05,
           },
         ],
@@ -127,75 +107,60 @@ RLUSD operates under a limited-purpose trust charter from the NYDFS (New York De
     },
   });
 
-  const publisher2 = await prisma.publisher.create({
+  await prisma.publisher.create({
     data: {
       name: "Protocol Weekly",
       walletAddress: publisher2Wallet.address,
       description:
-        "Weekly deep dives into open protocols, distributed systems, and the economics of decentralized networks.",
+        "Weekly analysis of open protocols, decentralized infrastructure, and the XRP Ledger ecosystem.",
       articles: {
         create: [
           {
-            title: "Why Micropayments Failed Before — And Why They Won't Now",
+            title: "XRPL's Built-In Exchange: How Native DEX Trading Works",
             preview:
-              "Blendle raised $40M and signed deals with the New York Times and Wall Street Journal. Coil had Ripple backing and a W3C standard. Both are effectively dead. Here's the honest post-mortem, and why the landscape is different today.",
-            content: `Blendle raised $40M and signed deals with the New York Times and Wall Street Journal. Coil had Ripple backing and a W3C standard. Both are effectively dead. Here's the honest post-mortem, and why the landscape is different today.
+              "The XRP Ledger has had a fully functional decentralized exchange built directly into the protocol since it launched in 2012. No smart contracts, no separate deployment — trading is a native ledger operation. Here is how the order book, auto-bridging, and cross-currency payments actually work.",
+            content: `The XRP Ledger has had a built-in decentralized exchange since it launched in 2012. Trading is not a smart contract deployed on top of the protocol — it is part of the ledger itself, executed by every validator on every ledger close.
 
-## What Went Wrong
+## Offers and the Order Book
 
-**Blendle** (2014-2023): The Dutch micropayment platform let users pay per article. It launched with premium publisher partnerships and genuine user enthusiasm. By 2023 it had quietly pivoted to a subscription model and wound down the micropayment product.
+The fundamental trading primitive on XRPL is an Offer object. A wallet creates an Offer by specifying a TakerPays amount (what they are willing to give) and a TakerGets amount (what they want in return). When a new offer crosses an existing one from the opposite side, both sides settle atomically and the assets transfer in the same ledger close. Partially filled offers remain in the ledger's order book until consumed by a future offer or manually cancelled.
 
-The core issue: cognitive load. Deciding whether each article was worth €0.19 was exhausting. Users didn't want to think about money on every click. Conversion was terrible at the top of the funnel and even worse for individual articles.
+## Auto-Bridging With XRP
 
-**Coil** (2018-2023): Built on the Web Monetization API and Interledger Protocol. Publishers added a meta tag; Coil subscribers streamed micropayments per second while reading. The UX was elegant. The network was not.
+XRPL includes a built-in auto-bridging feature. If a trader wants to exchange one issued currency for another and no direct market exists between them, the protocol automatically considers routing through XRP. If routing through XRP produces a better rate than trading directly, the protocol uses XRP as an intermediary and handles both hops atomically within a single transaction. The trader sees a single operation regardless of the internal path.
 
-Coil's problem: chicken-and-egg. Without publishers, readers had nothing to pay for. Without reader revenue, publishers had no reason to implement. Coil shut down in 2023.
+## Cross-Currency Payments
 
-## What's Different Now
+XRPL's path-finding system enables a sender to make a payment in one currency while the recipient receives a different currency, all in one atomic transaction. The sender specifies a maximum amount they are willing to spend, the recipient's address, and the currency the recipient should receive. The protocol finds the best available path through the order books and trust line relationships, executes the conversion, and guarantees the recipient receives at least the specified amount.
 
-Three things have changed:
+## Rippling
 
-1. **Economics**: Visa minimum fees made $0.10 transactions irrational. XRPL's ~$0.00002 fee makes them trivially viable. The margin math works.
-
-2. **Wallet UX**: Crossmark, Xaman, and similar wallets have reduced XRPL interaction to a near-Stripe-level UX. Signing a payment is a one-tap operation.
-
-3. **Budget model**: The reading budget concept (pre-fund, auto-spend) removes per-article decision fatigue — the core failure mode of Blendle. Readers decide once per month, not once per article.
-
-The window exists. Whether it stays open depends on execution.`,
+XRPL supports a mechanism called rippling, where balances flow through chains of trust relationships. If Alice trusts Bob for USD and Bob trusts Carol for USD, Alice can send USD to Carol via Bob in a single operation, with Bob's balances adjusting accordingly. Wallets can disable rippling on individual trust lines if they prefer not to act as an intermediary in these chains.`,
             price: 0.1,
           },
           {
-            title: "On-Chain Publisher Identity: XRPL Credentials Explained",
+            title: "Verifiable Credentials on the XRP Ledger",
             preview:
-              "XRPL's Credentials amendment introduces on-chain verifiable credentials — W3C-compatible attestations that link an XRPL address to real-world identity. Here's how to use them for publisher verification.",
-            content: `XRPL's Credentials amendment introduces on-chain verifiable credentials — W3C-compatible attestations that link an XRPL address to real-world identity. Here's how to use them for publisher verification.
+              "The XRPL Credentials amendment adds on-chain verifiable credentials to the XRP Ledger. These are attestations issued by one address about another — useful for identity verification, access control, KYC status, and professional certification without relying on a centralized database.",
+            content: `The XRPL Credentials amendment adds on-chain verifiable credentials to the XRP Ledger. A credential is an on-chain object where one XRPL address (the issuer) makes a verifiable attestation about another address (the subject).
 
-## What Are XRPL Credentials?
+## The Two-Step Model
 
-A Credential is an on-chain object created by an issuer, tied to a subject (another XRPL address), containing a credential type and optional URI pointing to off-chain data. The credential must be accepted by the subject before it becomes active.
+Creating an active credential requires two transactions. First, the issuer submits a CredentialCreate transaction specifying the subject's address, a credential type, an optional expiration timestamp, and an optional URI pointing to off-chain metadata such as a JSON-LD document. The credential object is written to the ledger in a pending state.
 
-Think of it as: "Dropin (issuer) attests that this wallet address (subject) is a verified publisher (credential type)."
+Second, the subject must explicitly accept the credential by submitting a CredentialAccept transaction from their own wallet. Only after this acceptance does the credential become active. This design prevents issuers from attaching claims to addresses without the subject's knowledge or consent, which would otherwise create a spam vector.
 
-## The CredentialCreate Transaction
+## Credential Types
 
-The CredentialCreate transaction specifies: TransactionType, Account (issuer/platform address), Subject (publisher wallet), CredentialType (hex-encoded string, e.g. "publisherverified"), an optional URI pointing to off-chain metadata, and an optional Expiration timestamp.
+The credential type is a 1 to 64-byte value defined by the issuer and encoded as a hex string in transactions. Issuers decide what their credential types represent. An identity provider might use a type representing KYC completion. A professional network might issue credentials representing employment verification. A platform might attest that a wallet address has completed a registration process.
 
-The CredentialType is hex-encoded. The URI can point to a JSON-LD document with full publisher metadata.
+## Querying Credentials
 
-## Publisher Acceptance
+Applications can query the XRPL to check for active credentials on any address. A credential lookup returns the credential object if found, including the issuer, subject, type, optional URI, and expiration date if set. If the credential has not been accepted by the subject, or if it has expired, it does not appear as active.
 
-The publisher must accept the credential with a CredentialAccept transaction from their own wallet. This prevents credential spam — issuers can't attach claims to wallets without the subject's cooperation.
+## DepositAuth Integration
 
-## Verification In Practice
-
-When a reader visits a publisher's page, the platform queries the XRPL for an active Credential object with:
-- Issuer = platform address
-- Subject = publisher wallet
-- Type = "publisherverified"
-
-If found and not expired, the publisher badge is shown. No centralized database required.
-
-This is the architecture Dropin uses for the Sprint 2 publisher verification feature.`,
+XRPL Credentials integrate with the DepositAuth feature. A wallet with DepositAuth enabled can specify that incoming payment senders must hold a credential from a trusted issuer before payments are allowed through. This creates a protocol-level compliance layer where an issuer, such as a regulated entity, can define which counterparties a wallet is willing to transact with.`,
             price: 0.2,
           },
         ],
@@ -203,13 +168,9 @@ This is the architecture Dropin uses for the Sprint 2 publisher verification fea
     },
   });
 
-  console.log(
-    `Seeded: ${publisher1.name} (${publisher1.walletAddress}) — 3 articles`
-  );
-  console.log(
-    `Seeded: ${publisher2.name} (${publisher2.walletAddress}) — 2 articles`
-  );
-  console.log("\nSeed complete. Remember to fund publisher wallets on testnet.");
+  console.log("Seeded: The Ledger Report — 3 articles");
+  console.log("Seeded: Protocol Weekly — 2 articles");
+  console.log("\nFund both publisher wallets on XRPL testnet before testing payments.");
 }
 
 main()
