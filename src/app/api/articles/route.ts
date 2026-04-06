@@ -2,8 +2,12 @@ import { prisma } from "@/lib/db/client";
 import { RLUSD_ISSUER } from "@/lib/xrpl/currency";
 import type { ArticleSummary } from "@/types";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
+  const { searchParams } = new URL(request.url);
+  const publisherId = searchParams.get("publisherId") ?? undefined;
+
   const articles = await prisma.article.findMany({
+    where: publisherId ? { publisherId } : undefined,
     include: { publisher: { select: { id: true, name: true } } },
     orderBy: { createdAt: "desc" },
   });

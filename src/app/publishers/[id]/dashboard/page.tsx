@@ -4,11 +4,10 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { use } from "react";
 import { PublisherArticleForm } from "@/components/PublisherArticleForm";
-import { useWallet } from "@/components/WalletProvider";
-import { CREDENTIAL_TYPE_HEX } from "@/lib/xrpl/currency";
+import { truncateAddress, truncateHash, timeAgo } from "@/lib/format";
 import type { ArticleSummary, PaymentRecord, PublisherProfile } from "@/types";
 
-type CredentialStatus = "accepted" | "pending" | "none" | "loading";
+type CredentialStatus = "accepted" | "none" | "loading";
 
 type EarningsData = {
   totalXrp: number;
@@ -21,27 +20,8 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-function truncateAddress(addr: string): string {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
-
-function truncateHash(hash: string): string {
-  return `${hash.slice(0, 8)}…${hash.slice(-4)}`;
-}
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
 export default function DashboardPage({ params }: Props) {
   const { id } = use(params);
-  const { address } = useWallet();
   const [publisher, setPublisher] = useState<PublisherProfile | null>(null);
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
   const [earnings, setEarnings] = useState<EarningsData | null>(null);
@@ -50,13 +30,13 @@ export default function DashboardPage({ params }: Props) {
   const [error, setError] = useState("");
   const [credentialStatus, setCredentialStatus] = useState<CredentialStatus>("loading");
   const [credentialError, setCredentialError] = useState("");
-  const [acceptingCredential, setAcceptingCredential] = useState(false);
+  const [requestingCredential, setRequestingCredential] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
       const [pubRes, artRes, earnRes] = await Promise.all([
         fetch(`/api/publishers/${id}`),
-        fetch(`/api/articles`),
+        fetch(`/api/articles?publisherId=${id}`),
         fetch(`/api/publishers/${id}/earnings`),
       ]);
 
@@ -65,14 +45,14 @@ export default function DashboardPage({ params }: Props) {
         return;
       }
 
-      const [pub, allArticles, earn] = await Promise.all([
+      const [pub, pubArticles, earn] = await Promise.all([
         pubRes.json() as Promise<PublisherProfile>,
         artRes.json() as Promise<ArticleSummary[]>,
         earnRes.json() as Promise<EarningsData>,
       ]);
 
       setPublisher(pub);
-      setArticles(allArticles.filter((a) => a.publisherId === id));
+      setArticles(pubArticles);
       setEarnings(earn);
     } catch {
       setError("Failed to load dashboard");
@@ -93,27 +73,21 @@ export default function DashboardPage({ params }: Props) {
       .catch(() => setCredentialStatus("none"));
   }, [publisher]);
 
-  async function handleAcceptCredential() {
-    if (!publisher || !address || !window.xrpl?.crossmark) return;
-    const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET;
-    if (!platformWallet) {
-      setCredentialError("Platform wallet not configured.");
-      return;
-    }
-    setAcceptingCredential(true);
+  async function handleRequestCredential() {
+    setRequestingCredential(true);
     setCredentialError("");
     try {
-      await window.xrpl.crossmark.methods.signAndSubmitAndWait({
-        TransactionType: "CredentialAccept",
-        Account: address,
-        Issuer: platformWallet,
-        CredentialType: CREDENTIAL_TYPE_HEX,
-      });
-      setCredentialStatus("accepted");
+      const res = await fetch(`/api/publishers/${id}/credential`, { method: "POST" });
+      const data = (await res.json()) as { success?: boolean; error?: string };
+      if (!res.ok) {
+        setCredentialError(data.error ?? "Failed to request credential. Please try again.");
+      } else {
+        setCredentialStatus("accepted");
+      }
     } catch {
-      setCredentialError("Credential acceptance failed. Please try again.");
+      setCredentialError("Request failed. Please try again.");
     } finally {
-      setAcceptingCredential(false);
+      setRequestingCredential(false);
     }
   }
 
@@ -217,11 +191,13 @@ export default function DashboardPage({ params }: Props) {
                     No articles yet. Add your first one above.
                   </td>
                 </tr>
-              ) : (
-                articles.map((article) => {
-                  const sales = earnings?.payments.filter(
-                    (p) => p.articleId === article.id
-                  ).length ?? 0;
+              ) : (() => {
+                  const salesByArticle = new Map<string, number>();
+                  for (const p of earnings?.payments ?? []) {
+                    salesByArticle.set(p.articleId, (salesByArticle.get(p.articleId) ?? 0) + 1);
+                  }
+                  return articles.map((article) => {
+                  const sales = salesByArticle.get(article.id) ?? 0;
                   return (
                     <tr
                       key={article.id}
@@ -245,8 +221,8 @@ export default function DashboardPage({ params }: Props) {
                       </td>
                     </tr>
                   );
-                })
-              )}
+                });
+              })()}
             </tbody>
           </table>
         </div>
@@ -326,33 +302,22 @@ export default function DashboardPage({ params }: Props) {
             <span className="text-[12px] font-semibold text-positive">Verified on XRPL</span>
           </div>
         )}
-        {credentialStatus === "pending" && (
+        {credentialStatus === "none" && (
           <div className="space-y-3">
             <p className="text-[13px] text-ink-secondary">
-              The platform has issued you a publisher credential on XRPL. Accept it to display a verified badge.
+              No credential has been issued yet. Request verification to start the process.
             </p>
             {credentialError && (
               <p className="text-[12px] text-negative font-medium">{credentialError}</p>
             )}
-            {address === publisher.walletAddress ? (
-              <button
-                onClick={() => void handleAcceptCredential()}
-                disabled={acceptingCredential}
-                className="px-4 py-2 rounded-full bg-accent text-surface text-[12px] font-semibold hover:bg-accent-deep transition-colors disabled:opacity-60 disabled:cursor-default"
-              >
-                {acceptingCredential ? "Waiting for Crossmark…" : "Accept credential"}
-              </button>
-            ) : (
-              <p className="text-[12px] text-ink-muted">
-                Connect your publisher wallet to accept this credential.
-              </p>
-            )}
+            <button
+              onClick={() => void handleRequestCredential()}
+              disabled={requestingCredential}
+              className="px-4 py-2 rounded-full border border-ink/20 text-ink-secondary text-[12px] font-semibold hover:border-accent hover:text-accent transition-colors disabled:opacity-60 disabled:cursor-default"
+            >
+              {requestingCredential ? "Requesting…" : "Request verification"}
+            </button>
           </div>
-        )}
-        {credentialStatus === "none" && (
-          <p className="text-[13px] text-ink-muted">
-            No credential found. If you registered recently, it may take a moment to appear.
-          </p>
         )}
       </section>
 

@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useCallback } from "react";
 import { useWallet } from "./WalletProvider";
 import type { IssuedCurrencyAmount } from "xrpl";
+import { truncateHash } from "@/lib/format";
 
 const RLUSD_CURRENCY =
   process.env.NEXT_PUBLIC_RLUSD_CURRENCY ??
@@ -78,10 +79,6 @@ function xrpToDropsStr(xrp: number): string {
   return String(Math.round(xrp * 1_000_000));
 }
 
-function truncateHash(hash: string): string {
-  if (hash.length < 12) return hash;
-  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
-}
 
 type TrustLineResult = { hasTrustLine: boolean; publisherHasTrustLine?: boolean };
 
@@ -460,6 +457,19 @@ function ProsePreview({ preview }: { preview: string }) {
   );
 }
 
+function parseInline(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|_[^_]+_)/);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i} className="font-semibold text-ink">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("_") && part.endsWith("_")) {
+      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 function ArticleProse({ content }: { content: string }) {
   const paragraphs = content
     .split(/\n+/)
@@ -472,20 +482,20 @@ function ArticleProse({ content }: { content: string }) {
         if (para.startsWith("## ")) {
           return (
             <h2 key={i} className="font-display text-[24px] font-normal mt-8 mb-2 tracking-[-0.3px] text-ink">
-              {para.slice(3)}
+              {parseInline(para.slice(3))}
             </h2>
           );
         }
         if (para.startsWith("# ")) {
           return (
             <h1 key={i} className="font-display text-[30px] font-normal mt-8 mb-3 tracking-[-0.5px] text-ink">
-              {para.slice(2)}
+              {parseInline(para.slice(2))}
             </h1>
           );
         }
         return (
           <p key={i} className="text-[17px] leading-[1.9] text-ink">
-            {para}
+            {parseInline(para)}
           </p>
         );
       })}

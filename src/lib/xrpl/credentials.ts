@@ -2,10 +2,7 @@ import { Wallet } from "xrpl";
 import { getXrplClient } from "./client";
 import { CREDENTIAL_TYPE_HEX } from "./currency";
 
-export type CredentialStatus = "accepted" | "pending" | "none";
-
-// lsfAccepted flag on Credential ledger objects — set after CredentialAccept tx
-const LSF_ACCEPTED = 0x00010000;
+export type CredentialStatus = "accepted" | "none";
 
 /**
  * Submits a CredentialCreate transaction from the platform wallet,
@@ -44,9 +41,12 @@ export async function issueCredential(publisherWalletAddress: string): Promise<v
 
 /**
  * Queries the XRPL ledger for the credential status of a publisher.
- * Returns "accepted" if the publisher has accepted the credential,
- * "pending" if the platform issued it but the publisher hasn't accepted,
- * "none" if no credential exists.
+ * Returns "accepted" if the credential object exists on-ledger (issued by platform).
+ * Returns "none" if no credential exists.
+ *
+ * Note: Crossmark does not support CredentialAccept transactions, so we treat
+ * the existence of the credential (CredentialCreate confirmed on-chain) as
+ * sufficient verification for demo purposes. The "pending" state is not used.
  */
 export async function getCredentialStatus(
   publisherWalletAddress: string
@@ -67,11 +67,9 @@ export async function getCredentialStatus(
       ledger_index: "validated",
     } as Parameters<typeof client.request>[0]);
 
-    const node = (resp.result as { node?: { Flags?: number } }).node;
+    const node = (resp.result as { node?: unknown }).node;
     if (!node) return "none";
-
-    const isAccepted = ((node.Flags ?? 0) & LSF_ACCEPTED) !== 0;
-    return isAccepted ? "accepted" : "pending";
+    return "accepted";
   } catch {
     // ledger_entry throws when the object doesn't exist
     return "none";
