@@ -1,6 +1,7 @@
 import { isValidClassicAddress } from "xrpl";
 import { prisma } from "@/lib/db/client";
 import { toPublisherProfile } from "@/lib/db/mappers";
+import { issueCredential } from "@/lib/xrpl/credentials";
 
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
@@ -68,6 +69,12 @@ export async function POST(request: Request): Promise<Response> {
         walletAddress,
         description: description?.trim() ?? null,
       },
+    });
+
+    // Fire-and-forget: issue credential after registration. Failures are logged
+    // but do not affect the registration response.
+    void issueCredential(publisher.walletAddress).catch((err: unknown) => {
+      console.error("[credential] Failed to issue credential for", publisher.walletAddress, err);
     });
 
     return Response.json(toPublisherProfile(publisher), { status: 201 });

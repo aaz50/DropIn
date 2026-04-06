@@ -6,6 +6,9 @@ export const RLUSD_CURRENCY =
 
 export const RLUSD_ISSUER = process.env.NEXT_PUBLIC_RLUSD_ISSUER ?? "";
 
+// "publisherverified" encoded as hex — used for XRPL CredentialCreate / CredentialAccept
+export const CREDENTIAL_TYPE_HEX = "7075626C69736865727665726966696564";
+
 export function isIOU(v: unknown): v is IssuedCurrencyAmount {
   return (
     typeof v === "object" &&

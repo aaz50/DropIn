@@ -4,7 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { use } from "react";
 import { PublisherArticleForm } from "@/components/PublisherArticleForm";
+import { useWallet } from "@/components/WalletProvider";
+import { CREDENTIAL_TYPE_HEX } from "@/lib/xrpl/currency";
 import type { ArticleSummary, PaymentRecord, PublisherProfile } from "@/types";
+
+type CredentialStatus = "accepted" | "pending" | "none" | "loading";
 
 type EarningsData = {
   totalXrp: number;
@@ -37,12 +41,16 @@ function timeAgo(iso: string): string {
 
 export default function DashboardPage({ params }: Props) {
   const { id } = use(params);
+  const { address } = useWallet();
   const [publisher, setPublisher] = useState<PublisherProfile | null>(null);
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
   const [earnings, setEarnings] = useState<EarningsData | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [credentialStatus, setCredentialStatus] = useState<CredentialStatus>("loading");
+  const [credentialError, setCredentialError] = useState("");
+  const [acceptingCredential, setAcceptingCredential] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -76,6 +84,38 @@ export default function DashboardPage({ params }: Props) {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!publisher) return;
+    fetch(`/api/credential?publisherAddress=${encodeURIComponent(publisher.walletAddress)}`)
+      .then((r) => r.json())
+      .then((d: { status: CredentialStatus }) => setCredentialStatus(d.status))
+      .catch(() => setCredentialStatus("none"));
+  }, [publisher]);
+
+  async function handleAcceptCredential() {
+    if (!publisher || !address || !window.xrpl?.crossmark) return;
+    const platformWallet = process.env.NEXT_PUBLIC_PLATFORM_WALLET;
+    if (!platformWallet) {
+      setCredentialError("Platform wallet not configured.");
+      return;
+    }
+    setAcceptingCredential(true);
+    setCredentialError("");
+    try {
+      await window.xrpl.crossmark.methods.signAndSubmitAndWait({
+        TransactionType: "CredentialAccept",
+        Account: address,
+        Issuer: platformWallet,
+        CredentialType: CREDENTIAL_TYPE_HEX,
+      });
+      setCredentialStatus("accepted");
+    } catch {
+      setCredentialError("Credential acceptance failed. Please try again.");
+    } finally {
+      setAcceptingCredential(false);
+    }
+  }
 
   function handleArticleAdded(article: ArticleSummary) {
     setArticles((prev) => [article, ...prev]);
@@ -270,8 +310,54 @@ export default function DashboardPage({ params }: Props) {
         </section>
       )}
 
+      {/* XRPL Credential section */}
+      <section className="mt-10 pt-6 border-t border-ink/[0.06]">
+        <h2 className="text-[14px] font-bold tracking-[0.3px] text-ink mb-3">
+          XRPL Verification
+        </h2>
+        {credentialStatus === "loading" && (
+          <p className="text-[13px] text-ink-muted">Checking credential status...</p>
+        )}
+        {credentialStatus === "accepted" && (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-positive/10 border border-positive/20">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-positive">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+            <span className="text-[12px] font-semibold text-positive">Verified on XRPL</span>
+          </div>
+        )}
+        {credentialStatus === "pending" && (
+          <div className="space-y-3">
+            <p className="text-[13px] text-ink-secondary">
+              The platform has issued you a publisher credential on XRPL. Accept it to display a verified badge.
+            </p>
+            {credentialError && (
+              <p className="text-[12px] text-negative font-medium">{credentialError}</p>
+            )}
+            {address === publisher.walletAddress ? (
+              <button
+                onClick={() => void handleAcceptCredential()}
+                disabled={acceptingCredential}
+                className="px-4 py-2 rounded-full bg-accent text-surface text-[12px] font-semibold hover:bg-accent-deep transition-colors disabled:opacity-60 disabled:cursor-default"
+              >
+                {acceptingCredential ? "Waiting for Crossmark…" : "Accept credential"}
+              </button>
+            ) : (
+              <p className="text-[12px] text-ink-muted">
+                Connect your publisher wallet to accept this credential.
+              </p>
+            )}
+          </div>
+        )}
+        {credentialStatus === "none" && (
+          <p className="text-[13px] text-ink-muted">
+            No credential found. If you registered recently, it may take a moment to appear.
+          </p>
+        )}
+      </section>
+
       {/* Publisher info footer */}
-      <div className="mt-10 pt-6 border-t border-ink/[0.06]">
+      <div className="mt-6 pt-6 border-t border-ink/[0.06]">
         <p className="text-[12px] text-ink-muted">
           Wallet:{" "}
           <span className="font-mono text-ink-secondary">{publisher.walletAddress}</span>

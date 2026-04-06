@@ -462,7 +462,7 @@ function ProsePreview({ preview }: { preview: string }) {
 
 function ArticleProse({ content }: { content: string }) {
   const paragraphs = content
-    .split(/\n\n+/)
+    .split(/\n+/)
     .map((p) => p.trim())
     .filter(Boolean);
 

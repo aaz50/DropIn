@@ -114,14 +114,14 @@ export function PublisherArticleForm({ publisherId, onSuccess }: Props) {
         </span>
       </Field>
 
-      <Field label="Full content" required>
+      <Field label="Full content" hint="Use ## for section headings. Press Enter for a new paragraph." required>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Write your full article here..."
           required
-          rows={10}
-          className="field-input resize-y"
+          rows={12}
+          className="field-input resize-y break-words"
         />
       </Field>
 
